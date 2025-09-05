@@ -13,7 +13,7 @@ app = FastAPI(title="Loja Virtual API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://frontend-chatbot-hazel.vercel.app/", "http://localhost:5173"],  # permite qualquer origem (ou só ["http://localhost:5173"])
+    allow_origins=["https://frontend-chatbot-hazel.vercel.app", "http://localhost:5173"],  # permite qualquer origem (ou só ["http://localhost:5173"])
     allow_methods=["*"],
     allow_headers=["*"],
 )
