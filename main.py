@@ -39,10 +39,14 @@ def criar_produto(produto: schemas.ProdutoCreate, db: Session = Depends(get_db))
 def fazer_pergunta(pergunta: schemas.PerguntaCreate, db: Session = Depends(get_db)):
     resposta = chatbot.responder_chatbot(pergunta.pergunta, db)
     db_pergunta = crud.create_pergunta(db, pergunta)
+    
     if resposta:
-        crud.responder_pergunta(db, db_pergunta.id, resposta)
+        # marcar como respondida com a resposta do chatbot
         db_pergunta.resposta = resposta
         db_pergunta.respondida = True
+        db.commit()
+        db.refresh(db_pergunta)
+    
     return db_pergunta
 
 @app.get("/nao-respondidas", response_model=list[schemas.Pergunta])
