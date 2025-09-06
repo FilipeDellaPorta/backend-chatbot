@@ -31,6 +31,11 @@ def get_db():
 def listar_produtos(db: Session = Depends(get_db)):
     return crud.get_produtos(db)
 
+@app.get("/perguntas", response_model=list[schemas.Pergunta])
+def listar_perguntas(db: Session = Depends(get_db)):
+    perguntas = db.query(models.Pergunta).all()
+    return perguntas
+
 @app.post("/produtos", response_model=schemas.Produto)
 def criar_produto(produto: schemas.ProdutoCreate, db: Session = Depends(get_db)):
     return crud.create_produto(db, produto)
@@ -59,6 +64,17 @@ def responder_pergunta(resposta_data: schemas.RespostaCreate, db: Session = Depe
     if pergunta:
         pergunta.resposta = resposta_data.resposta
         pergunta.respondida = True
+        db.commit()
+        db.refresh(pergunta)
+        return pergunta
+    raise HTTPException(status_code=404, detail="Pergunta não encontrada")
+
+@app.put("/corrigir", response_model=schemas.Pergunta)
+def corrigir_resposta(correcao: schemas.CorrecaoResposta, db: Session = Depends(get_db)):
+    pergunta = db.query(models.Pergunta).filter(models.Pergunta.id == correcao.id).first()
+    if pergunta:
+        pergunta.resposta = correcao.resposta
+        pergunta.respondida = True  # garante que fique marcada como respondida
         db.commit()
         db.refresh(pergunta)
         return pergunta

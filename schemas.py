@@ -28,3 +28,7 @@ class Pergunta(PerguntaBase):
 class RespostaCreate(BaseModel):
     id: int
     resposta: str
+
+class CorrecaoResposta(BaseModel):
+    id: int
+    resposta: str
