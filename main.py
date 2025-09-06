@@ -27,55 +27,68 @@ def get_db():
         db.close()
 
 # Rotas
+
+# Listar produtos
 @app.get("/produtos", response_model=list[schemas.Produto])
 def listar_produtos(db: Session = Depends(get_db)):
     return crud.get_produtos(db)
 
-@app.get("/perguntas", response_model=list[schemas.Pergunta])
-def listar_perguntas(db: Session = Depends(get_db)):
-    perguntas = db.query(models.Pergunta).all()
-    return perguntas
-
+# Criar produto
 @app.post("/produtos", response_model=schemas.Produto)
 def criar_produto(produto: schemas.ProdutoCreate, db: Session = Depends(get_db)):
     return crud.create_produto(db, produto)
 
-@app.post("/pergunta", response_model=schemas.Pergunta)
-def fazer_pergunta(pergunta: schemas.PerguntaCreate, db: Session = Depends(get_db)):
-    resposta = chatbot.responder_chatbot(pergunta.pergunta, db)
-    db_pergunta = crud.create_pergunta(db, pergunta)
-    
-    if resposta:
-        # marcar como respondida com a resposta do chatbot
-        db_pergunta.resposta = resposta
-        db_pergunta.respondida = True
-        db.commit()
-        db.refresh(db_pergunta)
-    
-    return db_pergunta
+# Atualizar produto
+@app.put("/produtos/{produto_id}", response_model=schemas.Produto)
+def atualizar_produto(produto_id: int, produto: schemas.ProdutoCreate, db: Session = Depends(get_db)):
+    result = crud.update_produto(db, produto_id, produto)
+    if not result:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    return result
 
+# Deletar produto
+@app.delete("/produtos/{produto_id}")
+def deletar_produto(produto_id: int, db: Session = Depends(get_db)):
+    result = crud.delete_produto(db, produto_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    return {"message": "Produto deletado com sucesso"}
+
+# Listar todas as perguntas
+@app.get("/perguntas", response_model=list[schemas.Pergunta])
+def listar_perguntas(db: Session = Depends(get_db)):
+    return crud.listar_perguntas(db)
+
+# Listar perguntas não respondidas
 @app.get("/nao-respondidas", response_model=list[schemas.Pergunta])
 def listar_nao_respondidas(db: Session = Depends(get_db)):
     return crud.get_nao_respondidas(db)
 
+# Criar pergunta
+@app.post("/perguntas", response_model=schemas.Pergunta)
+def criar_pergunta(pergunta: schemas.PerguntaCreate, db: Session = Depends(get_db)):
+    return crud.create_pergunta(db, pergunta)
+
+# Responder pergunta
 @app.post("/responder", response_model=schemas.Pergunta)
 def responder_pergunta(resposta_data: schemas.RespostaCreate, db: Session = Depends(get_db)):
-    pergunta = db.query(models.Pergunta).filter(models.Pergunta.id == resposta_data.id).first()
-    if pergunta:
-        pergunta.resposta = resposta_data.resposta
-        pergunta.respondida = True
-        db.commit()
-        db.refresh(pergunta)
-        return pergunta
-    raise HTTPException(status_code=404, detail="Pergunta não encontrada")
+    result = crud.responder_pergunta(db, resposta_data.id, resposta_data.resposta)
+    if not result:
+        raise HTTPException(status_code=404, detail="Pergunta não encontrada")
+    return result
 
-@app.put("/corrigir", response_model=schemas.Pergunta)
+# Corrigir pergunta
+@app.put("/perguntas/{pergunta_id}", response_model=schemas.Pergunta)
 def corrigir_resposta(correcao: schemas.CorrecaoResposta, db: Session = Depends(get_db)):
-    pergunta = db.query(models.Pergunta).filter(models.Pergunta.id == correcao.id).first()
-    if pergunta:
-        pergunta.resposta = correcao.resposta
-        pergunta.respondida = True  # garante que fique marcada como respondida
-        db.commit()
-        db.refresh(pergunta)
-        return pergunta
-    raise HTTPException(status_code=404, detail="Pergunta não encontrada")
+    result = crud.corrigir_pergunta(db, correcao.id, correcao.resposta)
+    if not result:
+        raise HTTPException(status_code=404, detail="Pergunta não encontrada")
+    return result
+
+# Deletar pergunta
+@app.delete("/perguntas/{pergunta_id}")
+def deletar_pergunta(pergunta_id: int, db: Session = Depends(get_db)):
+    result = crud.delete_pergunta(db, pergunta_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Pergunta não encontrada")
+    return {"message": "Pergunta deletada com sucesso"}
