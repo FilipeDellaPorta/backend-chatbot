@@ -8,25 +8,42 @@ nlp = spacy.load("pt_core_news_sm")
 def responder_chatbot(pergunta: str, db: Session):
     doc = nlp(pergunta.lower())
 
-    # 1. Detectar se a pessoa está perguntando sobre produtos
-    palavras_produto = {"produto", "produtos", "item", "itens", "catálogo", "loja"}
-    if any(token.lemma_ in palavras_produto for token in doc):
-        produtos = db.query(models.Produto).all()
-        if produtos:
-            nomes = ", ".join([p.nome for p in produtos])
-            return f"Temos os seguintes produtos disponíveis: {nomes}."
-        else:
-            return "Ainda não temos produtos cadastrados."
+    # 1. Verificar pergunta exata já respondida
+    resposta_existente = (
+        db.query(models.Pergunta)
+        .filter(models.Pergunta.pergunta.ilike(pergunta), models.Pergunta.respondida == True)
+        .first()
+    )
+    if resposta_existente:
+        print(f"[DEBUG] Pergunta exata encontrada: {resposta_existente.pergunta}")
+        return resposta_existente.resposta
 
-    # 2. Detectar se a pessoa quer saber de preço
-    palavras_preco = {"preço", "valor", "custa", "custar"}
-    if any(token.lemma_ in palavras_preco for token in doc):
-        return "Os preços variam conforme o produto. Qual produto você gostaria de saber?"
+    # 2. Procurar pergunta parecida usando NLP
+    perguntas_respondidas = db.query(models.Pergunta).filter(models.Pergunta.respondida == True).all()
+    melhor_resposta = None
+    maior_score = 0.0
 
-    # 3. Detectar se está perguntando sobre desconto
-    palavras_desconto = {"desconto", "promoção", "oferta"}
-    if any(token.lemma_ in palavras_desconto for token in doc):
-        return "Temos descontos especiais para compras acima de 3 unidades."
+    for p in perguntas_respondidas:
+        doc_salvo = nlp(p.pergunta.lower())
+        score = doc.similarity(doc_salvo)  # similaridade semântica
+        print(f"[DEBUG] Comparando com '{p.pergunta}' → Similaridade: {score:.2f}")
 
-    # 4. Se não entendeu → retorna None
-    return None
+        if score > maior_score:
+            maior_score = score
+            melhor_resposta = p.resposta
+
+    # 3. Se encontrou uma pergunta parecida o suficiente
+    if maior_score >= 0.75:  # threshold ajustável
+        print(f"[DEBUG] Melhor correspondência encontrada (score={maior_score:.2f})")
+        return melhor_resposta
+    else:
+        print(f"[DEBUG] Nenhuma pergunta semelhante encontrada (score máximo={maior_score:.2f})")
+
+    # 4. Se não encontrou nada → salvar como nova pergunta
+    nova_pergunta = models.Pergunta(pergunta=pergunta, respondida=False)
+    db.add(nova_pergunta)
+    db.commit()
+    db.refresh(nova_pergunta)
+    print(f"[DEBUG] Nova pergunta salva no banco: '{pergunta}'")
+
+    return "Ainda não tenho uma resposta para isso, mas um atendente irá responder em breve."
