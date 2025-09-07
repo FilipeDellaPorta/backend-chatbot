@@ -67,11 +67,17 @@ def listar_nao_respondidas(db: Session = Depends(get_db)):
 # Criar pergunta
 @app.post("/pergunta", response_model=schemas.Pergunta)
 def criar_pergunta(pergunta: schemas.PerguntaCreate, db: Session = Depends(get_db)):
-    # Verifica se a pergunta já existe
-    db_pergunta = db.query(models.Pergunta).filter(models.Pergunta.pergunta == pergunta.pergunta).first()
-    if db_pergunta:
-        return db_pergunta  # retorna o registro existente
-    return crud.create_pergunta(db, pergunta)
+    # Cria a pergunta no banco primeiro
+    db_pergunta = crud.create_pergunta(db, pergunta)
+
+    # Tenta responder com o chatbot
+    resposta = chatbot.responder_chatbot(pergunta.pergunta, db)
+
+    # Se o chatbot encontrou uma resposta real
+    if resposta != "Ainda não tenho uma resposta para isso, mas um atendente irá responder em breve.":
+        db_pergunta = crud.responder(db, db_pergunta.id, resposta)
+
+    return db_pergunta
 
 # Responder pergunta
 @app.post("/responder", response_model=schemas.Pergunta)
