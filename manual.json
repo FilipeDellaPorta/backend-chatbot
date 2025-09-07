@@ -1,0 +1,34 @@
+{
+    "frete": {
+        "resposta": "O frete é válido para todo o Brasil.",
+        "keywords": [
+            "frete",
+            "envio",
+            "entrega"
+        ]
+    },
+    "horarios_entrega": {
+        "resposta": "Segunda a sexta, das 8h às 18h.",
+        "keywords": [
+            "horario",
+            "entrega",
+            "hora"
+        ]
+    },
+    "produtos_disponiveis": {
+        "resposta": "Produto A, Produto B, Produto C",
+        "keywords": [
+            "produto",
+            "produtos",
+            "disponivel"
+        ]
+    },
+    "politica_troca": {
+        "resposta": "Você pode trocar produtos em até 7 dias.",
+        "keywords": [
+            "troca",
+            "devolver",
+            "política"
+        ]
+    }
+}

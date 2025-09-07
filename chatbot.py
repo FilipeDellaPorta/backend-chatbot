@@ -2,24 +2,50 @@ import spacy
 import unicodedata
 from sqlalchemy.orm import Session
 import models
+import json
+import string
 
 # Carregar modelo de NLP em português
-nlp = spacy.load("pt_core_news_sm")
+nlp = spacy.load("pt_core_news_lg")
 
-# Função de normalização (remove acentos e pontuação, deixa minúsculo)
+# Carrega manual de instruções
+with open("manual.json", encoding="utf-8") as f:
+    manual = json.load(f)
+
+# Função de normalização (remove acentos, pontuação e deixa minúsculo)
 def normalizar(texto: str) -> str:
     texto = texto.lower()
     texto = ''.join(
         c for c in unicodedata.normalize('NFD', texto)
         if unicodedata.category(c) != 'Mn'
     )
+    # Remove pontuação
+    texto = texto.translate(str.maketrans('', '', string.punctuation))
     return texto
 
+# Responder usando o manual (mais flexível, por palavra-chave)
+def responder_manual(pergunta: str) -> str:
+    pergunta_norm = normalizar(pergunta)
+    palavras_pergunta = set(pergunta_norm.split())
+
+    for item in manual.values():
+        palavras_chave = set(normalizar(" ".join(item["keywords"])).split())
+        if palavras_chave.intersection(palavras_pergunta):
+            return item["resposta"]
+    
+    return None
+
+# Função principal do chatbot
 def responder_chatbot(pergunta: str, db: Session):
     pergunta_norm = normalizar(pergunta)
     doc = nlp(pergunta_norm)
 
-    # 1. Verificar pergunta exata já respondida
+    # 0. Tentar responder pelo manual primeiro
+    resposta_manual = responder_manual(pergunta)
+    if resposta_manual:
+        return resposta_manual
+
+    # 1. Verificar pergunta exata já respondida no banco
     resposta_existente = (
         db.query(models.Pergunta)
         .filter(models.Pergunta.pergunta.ilike(pergunta))
@@ -46,5 +72,5 @@ def responder_chatbot(pergunta: str, db: Session):
     if maior_score >= limiar:
         return melhor_resposta
 
-    # 4. Se não encontrou → não criar nada, só retorna a mensagem padrão
+    # 4. Se não encontrou → retorna mensagem padrão
     return "Ainda não tenho uma resposta para isso, mas um atendente irá responder em breve."
