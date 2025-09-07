@@ -27,7 +27,6 @@ def responder_chatbot(pergunta: str, db: Session):
         .first()
     )
     if resposta_existente:
-        print(f"[DEBUG] Pergunta exata encontrada: {resposta_existente.pergunta}")
         return resposta_existente.resposta
 
     # 2. Procurar pergunta parecida usando NLP
@@ -37,26 +36,15 @@ def responder_chatbot(pergunta: str, db: Session):
 
     for p in perguntas_respondidas:
         doc_salvo = nlp(normalizar(p.pergunta))
-        score = doc.similarity(doc_salvo)  # similaridade semântica
-        print(f"[DEBUG] Comparando com '{p.pergunta}' → Score: {score:.2f}")
-
+        score = doc.similarity(doc_salvo)
         if score > maior_score:
             maior_score = score
             melhor_resposta = p.resposta
 
     # 3. Se encontrou uma pergunta parecida o suficiente
-    limiar = 0.70  # threshold ajustável
+    limiar = 0.70
     if maior_score >= limiar:
-        print(f"[DEBUG] Melhor correspondência encontrada (score={maior_score:.2f})")
         return melhor_resposta
-    else:
-        print(f"[DEBUG] Nenhuma correspondência forte (score máximo={maior_score:.2f})")
 
-    # 4. Se não encontrou nada → salvar como nova pergunta
-    nova_pergunta = models.Pergunta(pergunta=pergunta, respondida=False)
-    db.add(nova_pergunta)
-    db.commit()
-    db.refresh(nova_pergunta)
-    print(f"[DEBUG] Nova pergunta salva no banco: '{pergunta}'")
-
+    # 4. Se não encontrou → não criar nada, só retorna a mensagem padrão
     return "Ainda não tenho uma resposta para isso, mas um atendente irá responder em breve."
