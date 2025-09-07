@@ -6,7 +6,7 @@ import json
 import string
 
 # Carregar modelo de NLP em português
-nlp = spacy.load("pt_core_news_lg")
+nlp = spacy.load("pt_core_news_sm") # nlp = spacy.load("pt_core_news_lg")
 
 # Carrega manual de instruções
 with open("manual.json", encoding="utf-8") as f:
