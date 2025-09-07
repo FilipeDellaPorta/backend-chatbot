@@ -50,7 +50,7 @@ def create_pergunta(db: Session, pergunta: schemas.PerguntaCreate):
     return db_pergunta
 
 # Responder pergunta
-def responder_pergunta(db: Session, pergunta_id: int, resposta: str):
+def responder(db: Session, pergunta_id: int, resposta: str):
     db_pergunta = db.query(models.Pergunta).filter(models.Pergunta.id == pergunta_id).first()
     if db_pergunta:
         db_pergunta.resposta = resposta
@@ -60,7 +60,7 @@ def responder_pergunta(db: Session, pergunta_id: int, resposta: str):
     return db_pergunta
 
 # Corrigir pergunta
-def corrigir_pergunta(db: Session, pergunta_id: int, resposta: str):
+def corrigir_resposta(db: Session, pergunta_id: int, resposta: str):
     pergunta = db.query(models.Pergunta).filter(models.Pergunta.id == pergunta_id).first()
     if pergunta:
         pergunta.resposta = resposta

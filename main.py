@@ -34,12 +34,12 @@ def listar_produtos(db: Session = Depends(get_db)):
     return crud.get_produtos(db)
 
 # Criar produto
-@app.post("/produtos", response_model=schemas.Produto)
+@app.post("/produto", response_model=schemas.Produto)
 def criar_produto(produto: schemas.ProdutoCreate, db: Session = Depends(get_db)):
     return crud.create_produto(db, produto)
 
 # Atualizar produto
-@app.put("/produtos/{produto_id}", response_model=schemas.Produto)
+@app.put("/produto/{produto_id}", response_model=schemas.Produto)
 def atualizar_produto(produto_id: int, produto: schemas.ProdutoCreate, db: Session = Depends(get_db)):
     result = crud.update_produto(db, produto_id, produto)
     if not result:
@@ -47,7 +47,7 @@ def atualizar_produto(produto_id: int, produto: schemas.ProdutoCreate, db: Sessi
     return result
 
 # Deletar produto
-@app.delete("/produtos/{produto_id}")
+@app.delete("/produto/{produto_id}")
 def deletar_produto(produto_id: int, db: Session = Depends(get_db)):
     result = crud.delete_produto(db, produto_id)
     if not result:
@@ -65,28 +65,32 @@ def listar_nao_respondidas(db: Session = Depends(get_db)):
     return crud.get_nao_respondidas(db)
 
 # Criar pergunta
-@app.post("/perguntas", response_model=schemas.Pergunta)
+@app.post("/pergunta", response_model=schemas.Pergunta)
 def criar_pergunta(pergunta: schemas.PerguntaCreate, db: Session = Depends(get_db)):
+    # Verifica se a pergunta já existe
+    db_pergunta = db.query(models.Pergunta).filter(models.Pergunta.pergunta == pergunta.pergunta).first()
+    if db_pergunta:
+        return db_pergunta  # retorna o registro existente
     return crud.create_pergunta(db, pergunta)
 
 # Responder pergunta
 @app.post("/responder", response_model=schemas.Pergunta)
-def responder_pergunta(resposta_data: schemas.RespostaCreate, db: Session = Depends(get_db)):
-    result = crud.responder_pergunta(db, resposta_data.id, resposta_data.resposta)
+def responder(resposta_data: schemas.RespostaCreate, db: Session = Depends(get_db)):
+    result = crud.responder(db, resposta_data.id, resposta_data.resposta)
     if not result:
         raise HTTPException(status_code=404, detail="Pergunta não encontrada")
     return result
 
-# Corrigir pergunta
-@app.put("/perguntas/{pergunta_id}", response_model=schemas.Pergunta)
+# Corrigir resposta
+@app.put("/resposta/{pergunta_id}", response_model=schemas.Pergunta)
 def corrigir_resposta(correcao: schemas.CorrecaoResposta, db: Session = Depends(get_db)):
-    result = crud.corrigir_pergunta(db, correcao.id, correcao.resposta)
+    result = crud.corrigir_resposta(db, correcao.id, correcao.resposta)
     if not result:
         raise HTTPException(status_code=404, detail="Pergunta não encontrada")
     return result
 
 # Deletar pergunta
-@app.delete("/perguntas/{pergunta_id}")
+@app.delete("/pergunta/{pergunta_id}")
 def deletar_pergunta(pergunta_id: int, db: Session = Depends(get_db)):
     result = crud.delete_pergunta(db, pergunta_id)
     if not result:
