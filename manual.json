@@ -16,7 +16,7 @@
         ]
     },
     "produtos_disponiveis": {
-        "resposta": "Produto A, Produto B, Produto C",
+        "resposta_tipo": "listar_produtos",
         "keywords": [
             "produto",
             "produtos",

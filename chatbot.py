@@ -24,13 +24,19 @@ def normalizar(texto: str) -> str:
     return texto
 
 # Responder usando o manual (mais flexível, por palavra-chave)
-def responder_manual(pergunta: str) -> str:
+def responder_manual(pergunta: str, db: Session) -> str:
     pergunta_norm = normalizar(pergunta)
     palavras_pergunta = set(pergunta_norm.split())
 
     for item in manual.values():
         palavras_chave = set(normalizar(" ".join(item["keywords"])).split())
         if palavras_chave.intersection(palavras_pergunta):
+            # Se for resposta dinâmica
+            if item.get("resposta_tipo") == "listar_produtos":
+                produtos = db.query(models.Produto).all()
+                nomes = [p.nome for p in produtos]
+                return ", ".join(nomes)
+            # Se for resposta fixa
             return item["resposta"]
     
     return None
@@ -41,7 +47,7 @@ def responder_chatbot(pergunta: str, db: Session):
     doc = nlp(pergunta_norm)
 
     # 0. Tentar responder pelo manual primeiro
-    resposta_manual = responder_manual(pergunta)
+    resposta_manual = responder_manual(pergunta, db)
     if resposta_manual:
         return resposta_manual
 
